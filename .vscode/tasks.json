@@ -1,0 +1,18 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Jalankan Server Lokal",
+            "type": "shell",
+            "command": "uvicorn main:app -h 127.0.0.1 -p 8000",
+            "problemMatcher": [],
+            "group": {
+                "kind": "none"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        }
+    ]
+}

@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scan QR Presensi — PresensiKampus</title>
+  <style>
+    :root {
+      --blue:#2563eb; --blue-dark:#1d4ed8; --green:#16a34a;
+      --red:#dc2626; --amber:#d97706; --ink:#172b4d;
+      --muted:#6b7c93; --line:#e4eaf2; --canvas:#f5f8fc;
+    }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    html,body { height:100%; background:var(--canvas); font:15px/1.5 "Segoe UI",Arial,sans-serif; color:var(--ink); }
+    body { display:flex; flex-direction:column; min-height:100vh; }
+
+    /* FIX: definisi .hidden yang hilang */
+    .hidden { display:none !important; }
+
+    .topbar { background:linear-gradient(135deg,#0f2744,#1761c5); color:#fff; padding:16px 20px; display:flex; align-items:center; gap:12px; }
+    .topbar .brand { width:36px; height:36px; border-radius:10px; background:#ffffff25; display:grid; place-items:center; font-weight:900; font-size:13px; flex-shrink:0; }
+    .topbar h1 { font-size:17px; font-weight:700; }
+    .topbar p  { font-size:11px; color:#b2d0ff; margin-top:1px; }
+
+    .container { flex:1; padding:20px; max-width:480px; margin:0 auto; width:100%; }
+
+    .card { background:#fff; border-radius:16px; border:1px solid var(--line); box-shadow:0 4px 20px #1a3d6910; overflow:hidden; margin-bottom:16px; }
+    .card-header { padding:16px 20px; border-bottom:1px solid var(--line); }
+    .card-header h2 { font-size:15px; font-weight:700; }
+    .card-header p  { font-size:12px; color:var(--muted); margin-top:3px; }
+    .card-body { padding:20px; }
+
+    /* Kamera */
+    .cam-wrap { position:relative; width:100%; aspect-ratio:1; border-radius:12px; overflow:hidden; background:#000; }
+    #video { width:100%; height:100%; object-fit:cover; display:block; }
+    .cam-overlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; }
+    .cam-frame { width:65%; aspect-ratio:1; border:3px solid #ffffff80; border-radius:16px; box-shadow:0 0 0 9999px rgba(0,0,0,0.45); position:relative; }
+    .cam-frame::before,.cam-frame::after,.cam-frame span::before,.cam-frame span::after { content:""; position:absolute; width:22px; height:22px; border-color:#60a5fa; border-style:solid; }
+    .cam-frame::before  { top:-3px; left:-3px;  border-width:3px 0 0 3px; border-radius:8px 0 0 0; }
+    .cam-frame::after   { top:-3px; right:-3px; border-width:3px 3px 0 0; border-radius:0 8px 0 0; }
+    .cam-frame span::before { bottom:-3px; left:-3px;  border-width:0 0 3px 3px; border-radius:0 0 0 8px; }
+    .cam-frame span::after  { bottom:-3px; right:-3px; border-width:0 3px 3px 0; border-radius:0 0 8px 0; }
+    .scan-line { position:absolute; left:8%; right:8%; height:2px; background:linear-gradient(90deg,transparent,#60a5fa,transparent); animation:scan 2s ease-in-out infinite; top:8%; }
+    @keyframes scan { 0%,100%{top:8%} 50%{top:88%} }
+
+    .cam-placeholder { width:100%; aspect-ratio:1; border-radius:12px; background:#f1f5f9; border:2px dashed #cbd5e1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; color:var(--muted); }
+    .cam-placeholder .icon { font-size:48px; }
+    .cam-placeholder p { font-size:13px; text-align:center; max-width:200px; line-height:1.5; }
+
+    /* Deteksi indikator */
+    .detect-bar { display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px; margin-top:10px; font-size:12px; font-weight:700; background:#f8faff; border:1px solid var(--line); }
+    .detect-dot { width:10px; height:10px; border-radius:50%; background:#cbd5e1; flex-shrink:0; }
+    .detect-bar.scanning .detect-dot { background:#3b82f6; animation:pulse 1s ease-in-out infinite; }
+    .detect-bar.found    .detect-dot { background:#22c55e; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    label { display:block; font-size:13px; font-weight:700; color:#40526d; margin-bottom:7px; }
+    input[type=text] { width:100%; border:1.5px solid var(--line); border-radius:10px; padding:12px 14px; font-size:16px; color:var(--ink); outline:none; transition:border-color .18s,box-shadow .18s; }
+    input[type=text]:focus { border-color:var(--blue); box-shadow:0 0 0 3px #2563eb18; }
+
+    .btn { display:block; width:100%; border:0; border-radius:10px; padding:14px; font-size:15px; font-weight:700; cursor:pointer; text-align:center; transition:transform .18s,box-shadow .18s; margin-top:10px; }
+    .btn:active { transform:scale(.97); }
+    .btn-primary { background:linear-gradient(135deg,var(--blue),var(--blue-dark)); color:#fff; box-shadow:0 6px 16px #2563eb35; }
+    .btn-primary:disabled { opacity:.6; cursor:not-allowed; transform:none; }
+    .btn-secondary { background:#f1f5f9; color:var(--ink); }
+    .btn-secondary:hover { background:#e2e8f0; }
+
+    /* Status */
+    #statusBox { display:none; }
+    .status-card { border-radius:16px; padding:32px 20px; text-align:center; animation:pop .35s cubic-bezier(.2,.75,.25,1) both; }
+    @keyframes pop { from{opacity:0;transform:scale(.9)} to{opacity:1;transform:scale(1)} }
+    .status-card.sukses { background:linear-gradient(135deg,#dcfce7,#bbf7d0); border:1px solid #86efac; }
+    .status-card.sudah  { background:linear-gradient(135deg,#fef9c3,#fef08a); border:1px solid #fde047; }
+    .status-card.gagal  { background:linear-gradient(135deg,#fee2e2,#fecaca); border:1px solid #fca5a5; }
+    .status-icon { font-size:64px; margin-bottom:14px; display:block; }
+    .status-card h3 { font-size:22px; font-weight:800; margin-bottom:6px; }
+    .status-card .nama { font-size:18px; font-weight:700; margin:10px 0 4px; }
+    .status-card .detail { font-size:13px; color:#64748b; }
+    .status-card .tanggal { font-size:12px; color:#94a3b8; margin-top:8px; }
+    .timer-bar { margin-top:16px; background:#00000015; border-radius:20px; height:6px; overflow:hidden; }
+    .timer-fill { height:100%; background:var(--blue); border-radius:20px; transition:width 1s linear; }
+    .timer-text { font-size:12px; color:#64748b; margin-top:6px; }
+
+    .tips { background:#eff6ff; border-radius:10px; padding:12px 14px; font-size:12px; color:#1e40af; margin-top:12px; }
+    .tips b { display:block; margin-bottom:4px; }
+    .error-text { color:var(--red); font-size:13px; margin-top:8px; min-height:18px; }
+
+    /* Alert tidak ada internet */
+    .alert { padding:10px 14px; border-radius:10px; font-size:12px; margin-bottom:12px; }
+    .alert-warning { background:#fef9c3; border:1px solid #fde047; color:#92400e; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">PK</div>
+  <div><h1>PresensiKampus</h1><p>Scan QR untuk mencatat kehadiran</p></div>
+</div>
+
+<div class="container">
+
+  <!-- Alert library loading -->
+  <div id="alertLib" class="alert alert-warning hidden">
+    ⚠️ Gagal memuat library scan. Pastikan ada koneksi internet lalu <a href="#" onclick="location.reload();return false;" style="color:inherit;font-weight:700">muat ulang halaman</a>.
+  </div>
+
+  <!-- BOX SCAN -->
+  <div id="scanBox">
+    <div class="card">
+      <div class="card-header">
+        <h2>⌘ Scan QR Presensi</h2>
+        <p>Arahkan kamera ke QR Code yang ditampilkan ketua kelas</p>
+      </div>
+      <div class="card-body">
+        <div id="camPlaceholder" class="cam-placeholder">
+          <div class="icon">📷</div>
+          <p>Tekan tombol di bawah untuk membuka kamera</p>
+        </div>
+        <div id="camWrap" class="cam-wrap hidden">
+          <video id="video" autoplay playsinline muted></video>
+          <div class="cam-overlay">
+            <div class="cam-frame"><span></span><div class="scan-line"></div></div>
+          </div>
+        </div>
+        <div id="detectBar" class="detect-bar hidden">
+          <div class="detect-dot"></div>
+          <span id="detectText">Mendeteksi QR Code...</span>
+        </div>
+        <button type="button" class="btn btn-primary" id="btnKamera" style="margin-top:14px">📷 Buka Kamera</button>
+        <button type="button" class="btn btn-secondary hidden" id="btnStop">⏹ Hentikan Kamera</button>
+        <div class="tips">
+          <b>💡 Cara presensi via QR:</b>
+          1. Tekan "Buka Kamera" &nbsp;→&nbsp; 2. Arahkan ke QR Code &nbsp;→&nbsp; 3. QR terdeteksi otomatis &nbsp;→&nbsp; 4. Isi NIM &nbsp;→&nbsp; 5. Konfirmasi
+        </div>
+      </div>
+    </div>
+
+    <!-- Form NIM (muncul setelah QR terbaca) -->
+    <div class="card hidden" id="nimBox">
+      <div class="card-header">
+        <h2>✏️ Masukkan NIM Anda</h2>
+        <p>QR berhasil terbaca. Masukkan NIM untuk konfirmasi kehadiran.</p>
+      </div>
+      <div class="card-body">
+        <label for="tokenInput">Token QR (isi otomatis dari kamera, atau tempel manual saat offline)</label>
+        <input type="text" id="tokenInput" placeholder="Tempel token QR di sini" autocomplete="off">
+        <label for="nimInput" style="margin-top:10px">Nomor Induk Mahasiswa (NIM)</label>
+        <input type="text" id="nimInput" placeholder="Contoh: 2024001" autocomplete="off" inputmode="numeric">
+        <p class="error-text" id="nimError"></p>
+        <button type="button" class="btn btn-primary" id="btnKonfirmasi">✓ Konfirmasi Kehadiran</button>
+        <button type="button" class="btn btn-secondary" id="btnScanUlang">↺ Scan Ulang QR</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOX STATUS HASIL -->
+  <div id="statusBox">
+    <div class="status-card" id="statusCard">
+      <span class="status-icon" id="statusIcon"></span>
+      <h3 id="statusJudul"></h3>
+      <p class="nama"   id="statusNama"></p>
+      <p class="detail" id="statusDetail"></p>
+      <p class="tanggal" id="statusTanggal"></p>
+      <div class="timer-bar"><div class="timer-fill" id="timerFill" style="width:100%"></div></div>
+      <p class="timer-text">Reset otomatis dalam <b id="timerCount">10</b> detik</p>
+    </div>
+    <button type="button" class="btn btn-secondary" id="btnUlangi" style="margin-top:12px">↺ Scan QR Lagi</button>
+  </div>
+
+</div>
+
+<!-- jsQR dari CDN -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"
+  onerror="document.getElementById('alertLib').classList.remove('hidden')"></script>
+  <script>
+  const API_PREFIX = "/api/v1";
+  const $  = id => document.getElementById(id);
+
+  let stream = null, scanInterval = null, qrToken = null, resetTimer = null;
+  const canvas = document.createElement("canvas");
+  const ctx    = canvas.getContext("2d");
+
+  // ── Pastikan jsQR tersedia ──────────────────────────────────────────────────
+  function jsQRTersedia() {
+    return typeof jsQR === "function";
+  }
+
+  // ── Kamera ──────────────────────────────────────────────────────────────────
+  async function bukaKamera() {
+    if (!jsQRTersedia()) {
+      alert("Library scan QR belum termuat. Pastikan ada koneksi internet lalu muat ulang halaman.");
+      return;
+    }
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode:"environment", width:{ideal:1280}, height:{ideal:720} }
+      });
+      $("video").srcObject = stream;
+      $("camPlaceholder").classList.add("hidden");
+      $("camWrap").classList.remove("hidden");
+      $("detectBar").classList.remove("hidden");
+      $("detectBar").classList.add("scanning");
+      $("detectText").textContent = "Mencari QR Code...";
+      $("btnKamera").classList.add("hidden");
+      $("btnStop").classList.remove("hidden");
+      mulaiScan();
+    } catch(e) {
+      const pesan = e.name === "NotAllowedError"
+        ? "Izin kamera ditolak. Buka pengaturan browser dan izinkan akses kamera."
+        : "Gagal membuka kamera: " + e.message;
+      alert(pesan);
+    }
+  }
+
+  function tutupKamera() {
+    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+    clearInterval(scanInterval); scanInterval = null;
+    $("video").srcObject = null;
+    $("camWrap").classList.add("hidden");
+    $("detectBar").classList.add("hidden");
+    $("detectBar").classList.remove("scanning", "found");
+    $("camPlaceholder").classList.remove("hidden");
+    $("btnKamera").classList.remove("hidden");
+    $("btnStop").classList.add("hidden");
+  }
+
+  // ── Loop Scan ────────────────────────────────────────────────────────────────
+  function mulaiScan() {
+    scanInterval = setInterval(() => {
+      const video = $("video");
+      if (!video.videoWidth || !video.videoHeight) return;
+      canvas.width  = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0);
+      try {
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const kode = jsQR(imgData.data, imgData.width, imgData.height, {inversionAttempts:"dontInvert"});
+        if (kode && kode.data) prosesQR(kode.data);
+      } catch(_) {}
+    }, 300);
+  }
+
+  function prosesQR(data) {
+    // Coba parse sebagai JSON (format internal app)
+    try {
+      const parsed = JSON.parse(data);
+      if (parsed && parsed.token) {
+        qrToken = parsed.token;
+        qrTerdeteksi();
+        return;
+      }
+    } catch(_) {}
+
+    // Coba sebagai URL dengan ?token= parameter
+    try {
+      const url = new URL(data);
+      const t = url.searchParams.get("token");
+      if (t) { qrToken = t; qrTerdeteksi(); return; }
+    } catch(_) {}
+
+    // Coba langsung sebagai token string (JWT: xxx.xxx.xxx)
+    if (/^[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+$/.test(data.trim())) {
+      qrToken = data.trim();
+      qrTerdeteksi();
+    }
+  }
+
+  function qrTerdeteksi() {
+    clearInterval(scanInterval);
+    $("detectBar").classList.remove("scanning");
+    $("detectBar").classList.add("found");
+    $("detectText").textContent = "✓ QR Code berhasil terbaca!";
+    if ($("tokenInput")) $("tokenInput").value = qrToken || "";
+    // Bunyi notifikasi dengan Web Audio API
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.2);
+    } catch(_) {}
+    setTimeout(() => {
+      tutupKamera();
+      $("nimBox").classList.remove("hidden");
+      $("nimInput").focus();
+    }, 600);
+  }
+
+  // ── Konfirmasi ───────────────────────────────────────────────────────────────
+  async function konfirmasi() {
+    const manualToken = (($("tokenInput") || {}).value || "").trim();
+    if (manualToken && !qrToken) qrToken = manualToken;
+    const nimEl = $("nimInput");
+    const nim = ((nimEl && nimEl.value) || "").trim();
+    $("nimError").textContent = "";
+    if (!nim)     { $("nimError").textContent = "NIM tidak boleh kosong."; return; }
+    if (!qrToken) { $("nimError").textContent = "Token QR tidak valid. Silakan scan ulang."; return; }
+
+    const btn = $("btnKonfirmasi");
+    btn.textContent = "Memproses...";
+    btn.disabled = true;
+
+    const auth = localStorage.getItem("presensi_token") || "";
+    if (!auth) {
+      $("nimError").textContent = "Harus login dulu sebagai mahasiswa sebelum scan.";
+      btn.textContent = "✓ Konfirmasi Kehadiran";
+      btn.disabled = false;
+      return;
+    }
+    try {
+      const res  = await fetch(API_PREFIX + "/qr/scan?token=" + encodeURIComponent(qrToken) + "&nim=" + encodeURIComponent(nim), {method:"POST", headers:{Authorization:"Bearer " + auth}});
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const pesan = data.detail || "Terjadi kesalahan.";
+        if (/kadaluarsa|dimatikan/i.test(pesan)) tampilStatus("gagal","⏱️","QR Kadaluarsa",pesan,"Minta ketua kelas untuk membuat QR baru.","");
+        else if (/kelas/i.test(pesan)) tampilStatus("gagal","🚫","Bukan Kelas Anda",pesan,"Pastikan Anda scan QR kelas yang benar.","");
+        else if (/NIM/i.test(pesan)) tampilStatus("gagal","❓","NIM Bermasalah","NIM " + nim + " — " + pesan,"Periksa kembali NIM Anda.","");
+        else tampilStatus("gagal","✗","Gagal",pesan,"","");
+        return;
+      }
+
+      if (data.sudah_tercatat) {
+        tampilStatus("sudah","⚠️","Sudah Tercatat",data.nama,"Kehadiran Anda sudah tercatat sebelumnya.",data.tanggal);
+      } else {
+        tampilStatus("sukses","✅","Hadir Tercatat!",data.nama,"Kehadiran Anda berhasil dicatat. Selamat belajar! 🎉",data.tanggal);
+      }
+    } catch(e) {
+      tampilStatus("gagal","📡","Koneksi Bermasalah","Tidak dapat terhubung ke server","Periksa koneksi internet Anda.","");
+    } finally {
+      btn.textContent = "✓ Konfirmasi Kehadiran";
+      btn.disabled = false;
+    }
+  }
+
+  // ── Status ───────────────────────────────────────────────────────────────────
+  function tampilStatus(tipe, icon, judul, nama, detail, tanggal) {
+    $("scanBox").style.display   = "none";
+    $("statusBox").style.display = "block";
+    $("statusCard").className    = "status-card " + tipe;
+    $("statusIcon").textContent  = icon;
+    $("statusJudul").textContent = judul;
+    $("statusNama").textContent  = nama;
+    $("statusDetail").textContent = detail;
+    $("statusTanggal").textContent = tanggal ? "Tanggal: " + formatTanggal(tanggal) : "";
+
+    let sisa = 10;
+    $("timerFill").style.width = "100%";
+    $("timerCount").textContent = sisa;
+    clearInterval(resetTimer);
+    resetTimer = setInterval(() => {
+      sisa--;
+      $("timerCount").textContent = sisa;
+      $("timerFill").style.width  = (sisa * 10) + "%";
+      if (sisa <= 0) { clearInterval(resetTimer); resetHalaman(); }
+    }, 1000);
+  }
+
+  function formatTanggal(str) {
+    try {
+      return new Intl.DateTimeFormat("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric"})
+        .format(new Date(str + "T00:00:00"));
+    } catch(_) { return str; }
+  }
+
+  function resetHalaman() {
+    clearInterval(resetTimer);
+    qrToken = null;
+    const tokEl = $("tokenInput"), nimEl = $("nimInput"), errEl = $("nimError");
+    if (tokEl) tokEl.value = "";
+    if (nimEl) nimEl.value = "";
+    if (errEl) errEl.textContent = "";
+    $("nimBox").classList.add("hidden");
+    $("statusBox").style.display = "none";
+    $("scanBox").style.display   = "";
+  }
+
+  // ── Events ───────────────────────────────────────────────────────────────────
+  const on = (id, fn) => { const n = $(id); if (n) n.onclick = fn; };
+  on("btnKamera", bukaKamera);
+  on("btnStop", tutupKamera);
+  on("btnKonfirmasi", konfirmasi);
+  on("btnUlangi", resetHalaman);
+  on("btnScanUlang", () => {
+    qrToken = null;
+    const nimEl = $("nimInput"), errEl = $("nimError"), box = $("nimBox"), tokEl = $("tokenInput");
+    if (nimEl) nimEl.value = "";
+    if (errEl) errEl.textContent = "";
+    if (tokEl) tokEl.value = "";
+    if (box) box.classList.add("hidden");
+    bukaKamera();
+  });
+  const nimInputEl = $("nimInput");
+  if (nimInputEl) nimInputEl.addEventListener("keydown", e => { if (e.key === "Enter") konfirmasi(); });
+
+  // ── Auto dari URL ?token= ─────────────────────────────────────────────────
+  (function() {
+    const params = new URLSearchParams(location.search);
+    const t = params.get("token");
+    if (t) {
+      qrToken = t;
+      $("nimBox").classList.remove("hidden");
+      setTimeout(() => $("nimInput").focus(), 100);
+    }
+  })();
+</script>
+</body>
+</html>

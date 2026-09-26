@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Input Presensi - Absensi App</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --surface: #ffffff;
+            --background: #f8fafc;
+            --border: #e2e8f0;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 14px;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--background);
+            color: var(--text);
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 2rem;
+            background: var(--surface);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .header h1 {
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+        .header p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+        .form-container {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border: 1px solid var(--border);
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        .button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.875rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .button:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+        .button:disabled {
+            background: var(--text-muted);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .button-secondary {
+            background: var(--surface);
+            color: var(--text);
+            border: 1.5px solid var(--border);
+        }
+        .button-secondary:hover {
+            background: var(--background);
+        }
+        .status-message {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            display: none;
+        }
+        .status-success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1x solid #fecaca;
+        }
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 0.5rem;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .student-card {
+            background: var(--background);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .student-card:hover {
+            border-color: var(--primary);
+            background: rgba(37, 99, 235, 0.05);
+        }
+        .student-card.selected {
+            border-color: var(--primary);
+            background: rgba(37, 99, 235, 0.1);
+        }
+        .student-info {
+            font-weight: 500;
+        }
+        .student-meta {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📝 Input Presensi</h1>
+        <p>Catat kehadiran mahasiswa per mata kuliah</p>
+    </div>
+
+    <div class="form-container">
+        <div class="form-group">
+            <label for="absenTanggal">Tanggal</label>
+            <input type="date" id="absenTanggal" required>
+        </div>
+
+        <div class="form-group">
+            <label for="absenMataKuliah">Mata Kuliah</label>
+            <select id="absenMataKuliah" required>
+                <option value="">-- Pilih Mata Kuliah --</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Mahasiswa Tersedia</label>
+            <div id="studentList">
+                <div class="student-card">
+                    <div class="student-info">Memuat daftar mahasiswa...</div>
+                    <div class="student-meta">Memuat daftar mahasiswa...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="selectedStudent">Mahasiswa yang Dipilih</label>
+            <select id="selectedStudent" required>
+                <option value="">-- Pilih Mahasiswa --</option>
+            </select>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="absenStatus">Status Kehadiran</label>
+                <select id="absenStatus" required>
+                    <option value="">-- Pilih Status --</option>
+                    <option value="hadir">Hadir</option>
+                    <option value="sakit">Sakit</option>
+                    <option value="izin">Izin</option>
+                    <option value="alfa">Alfa</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="absenMetode">Metode Pencatatan</label>
+                <select id="absenMetode">
+                    <option value="manual">Manual</option>
+                    <option value="qr">QR</option>
+                    <option value="gps">GPS</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="absenKeterangan">Keterangan (Opsional)</label>
+            <input type="text" id="absenKeterangan" placeholder="Contoh: Sakit dengan surat dokter">
+        </div>
+
+        <button class="button" id="submitBtn" onclick="submitAbsensi()">
+            <span id="btnText">Simpan Presensi</span>
+        </button>
+        <div id="statusMessage" class="status-message"></div>
+    </div>
+
+    <script>
+        let students = [];
+        let mataKuliah = [];
+        let selectedStudentNim = null;
+        let token = localStorage.getItem('presensi_token');
+
+        // API Helper
+        async function api(path, options = {}) {
+            const headers = options.body ? {"Content-Type": "application/json"} : {};
+            if (token) headers.Authorization = "Bearer " + token;
+            const res = await fetch("/api/v1" + path, {...options, headers: {...headers, ...(options.headers || {})}});
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.detail || "Permintaan gagal.");
+            }
+            return res.status === 204 ? null : res.json();
+        }
+
+        // Load available data
+        async function loadData() {
+            try {
+                const [studentsData, mkData] = await Promise.all([
+                    api("/mahasiswa"),
+                    api("/mata-kuliah/")
+                ]);
+
+                students = studentsData || [];
+                mataKuliah = mkData || [];
+
+                renderStudentList();
+                renderMataKuliahSelect();
+                renderSelectedStudentSelect();
+
+                if (students.length === 0) {
+                    showStatus("Tidak ada mahasiswa yang tersedia.", true);
+                }
+            } catch (error) {
+                showStatus("Gagal memuat data: " + error.message, true);
+            }
+        }
+
+        // Render student list with selection
+        function renderStudentList() {
+            const studentListEl = document.getElementById('studentList');
+            if (!studentListEl) return;
+
+            if (students.length === 0) {
+                studentListEl.innerHTML = '<div class="student-card"><div class="student-info">Tidak ada mahasiswa yang tersedia</div></div>';
+                return;
+            }
+
+            studentListEl.innerHTML = students.map(mhs => {
+                const isSelected = selectedStudentNim === mhs.nim;
+                return `
+                    <div class="student-card ${isSelected ? 'selected' : ''}" onclick="selectStudent('${mhs.nim}', '${mhs.nama_lengkap}')">
+                        <div class="student-info">${mhs.nama_lengkap}</div>
+                        <div class="student-meta">NIM: ${mhs.nim}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Render mata kuliah select
+        function renderMataKuliahSelect() {
+            const selectEl = document.getElementById('absenMataKuliah');
+            if (!selectEl) return;
+
+            selectEl.innerHTML = '<option value="">-- Pilih Mata Kuliah --</option>' + 
+                mataKuliah.map(mk => `<option value="${mk.id}">${mk.kode} - ${mk.nama}</option>`).join('');
+        }
+
+        // Render selected student select
+        function renderSelectedStudentSelect() {
+            const selectEl = document.getElementById('selectedStudent');
+            if (!selectEl) return;
+
+            selectEl.innerHTML = '<option value="">-- Pilih Mahasiswa --</option>' + 
+                students.map(mhs => `<option value="${mhs.nim}" ${selectedStudentNim === mhs.nim ? 'selected' : ''}>${mhs.nama_lengkap} - ${mhs.nim}</option>`).join('');
+        }
+
+        // Student selection function
+        function selectStudent(nim, name) {
+            selectedStudentNim = nim;
+            renderStudentList();
+            renderSelectedStudentSelect();
+        }
+
+        // Submit attendance
+        async function submitAbsensi() {
+            const btn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+            const statusEl = document.getElementById('statusMessage');
+
+            // Validation
+            const tanggal = document.getElementById('absenTanggal').value;
+            const mataKuliahId = document.getElementById('absenMataKuliah').value;
+            const status = document.getElementById('absenStatus').value;
+            const selectedStudent = document.getElementById('selectedStudent').value;
+
+            if (!tanggal || !mataKuliahId || !status || !selectedStudent) {
+                showStatus('Harap isi semua field yang diperlukan', true);
+                return;
+            }
+
+            btn.disabled = true;
+            btnText.innerHTML = '<span class="loading"></span>Memproses...';
+            statusEl.className = 'status-message';
+            statusEl.style.display = 'block';
+
+            try {
+                const data = {
+                    nim: selectedStudent,
+                    tanggal: tanggal,
+                    status: status,
+                    keterangan: document.getElementById('absenKeterangan').value || null,
+                    metode: document.getElementById('absenMetode').value || 'manual',
+                    mata_kuliah_id: parseInt(mataKuliahId)
+                };
+
+                await api('/absensi/', {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+
+                showStatus('Presensi berhasil dicatat!', false);
+                
+                // Reset form
+                document.getElementById('absenTanggal').value = '';
+                document.getElementById('absenMataKuliah').value = '';
+                document.getElementById('absenStatus').value = '';
+                document.getElementById('selectedStudent').value = '';
+                document.getElementById('absenKeterangan').value = '';
+                selectedStudentNim = null;
+                renderStudentList();
+                renderSelectedStudentSelect();
+
+            } catch (error) {
+                showStatus('Gagal menyimpan presensi: ' + error.message, true);
+            } finally {
+                btn.disabled = false;
+                btnText.innerHTML = 'Simpan Presensi';
+            }
+        }
+
+        // Show status message
+        function showStatus(message, isError = false) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.style.display = 'block';
+            statusEl.className = 'status-message ' + (isError ? 'status-error' : 'status-success');
+            statusEl.textContent = message;
+            
+            if (!isError) {
+                setTimeout(() => {
+                    statusEl.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('absenTanggal').value = today;
+            loadData();
+        });
+    </script>
+</body>\n</html>

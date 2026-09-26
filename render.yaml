@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: PresensiKampus
+    env: python
+    region: singapore
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python run_server.py"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0

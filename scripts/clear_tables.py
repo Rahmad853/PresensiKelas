@@ -1,0 +1,11 @@
+import sqlite3
+con = sqlite3.connect('db_absensi.db')
+cur = con.cursor()
+cur.execute('PRAGMA foreign_keys=OFF')
+cur.execute('DELETE FROM absensi')
+cur.execute('DELETE FROM mata_kuliah')
+cur.execute('DELETE FROM mahasiswa')
+cur.execute('DELETE FROM users WHERE username != "admin"')
+cur.execute('DELETE FROM kelas')
+con.commit()
+print('Tables cleared')

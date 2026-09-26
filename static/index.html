@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>PresensiKampus — Absensi Mahasiswa</title><link rel="stylesheet" href="/static/style.css?v=9"></head>
+<body>
+<main id="loginView" class="auth-page"><section class="auth-panel"><div class="brand-mark">PK</div><p class="eyebrow">PRESENSI MAHASISWA</p><h1>PresensiKampus</h1><p class="auth-copy">Ruang kerja untuk mencatat kehadiran mahasiswa dengan rapi, cepat, dan terukur.</p><form id="loginForm" class="form-stack"><label>Nama pengguna<input name="username" autocomplete="username" required></label><label>Kata sandi<input name="password" type="password" autocomplete="current-password" required></label><button type="submit" class="button primary">Masuk <span>→</span></button></form><p id="loginError" class="form-error"></p><p class="auth-note">Akses untuk admin, ketua kelas, dan mahasiswa.</p></section><aside class="auth-aside"><div class="orb orb-one"></div><div class="orb orb-two"></div><div class="auth-aside-content"><span class="mini-label">PRESENSI TERINTEGRASI</span><h2>Absensi mahasiswa yang tertib dimulai dari pencatatan yang mudah.</h2><p>Catat kehadiran mahasiswa, pantau rekap, dan siapkan laporan dalam satu ruang kerja yang profesional.</p><div class="feature-list"><span>✓ Pencatatan harian</span><span>✓ Rekap otomatis</span><span>✓ Presensi QR</span></div></div></aside></main>
+
+<!-- APP SHELL (Admin & Ketua Kelas) -->
+<div id="appView" class="app-shell hidden">
+<aside class="sidebar">
+  <div class="sidebar-brand"><span class="brand-mark small">PK</span><span>Presensi<span>Kampus</span></span></div>
+  <nav id="mainNav">
+    <p class="sidebar-section">Utama</p>
+    <button type="button" class="nav-item active" data-page="dashboard"><span class="nav-ico">▦</span><span class="nav-txt"><b>Ringkasan</b><small>Dashboard</small></span></button>
+    <p class="sidebar-section">Manajemen</p>
+    <button type="button" class="nav-item admin-only" data-page="users"><span class="nav-ico">👤</span><span class="nav-txt"><b>Manajemen User</b><small>Akun & akses</small></span></button>
+    <button type="button" class="nav-item admin-only" data-page="kelas"><span class="nav-ico">◫</span><span class="nav-txt"><b>Kelas</b><small>Ketua, anggota & matkul</small></span></button>
+    <button type="button" class="nav-item" data-page="mataKuliah" style="display:none"><span class="nav-ico">◈</span><span class="nav-txt"><b>Mata Kuliah</b><small>Akademik</small></span></button>
+    <button type="button" class="nav-item ketua-only" data-page="absensi"><span class="nav-ico">✓</span><span class="nav-txt"><b>Input Absensi</b><small>Manual</small></span></button>
+    <button type="button" class="nav-item ketua-only" data-page="qr"><span class="nav-ico">⌘</span><span class="nav-txt"><b>Absensi QR</b><small>Scan mandiri</small></span></button>
+    <button type="button" class="nav-item ketua-only" data-page="laporan"><span class="nav-ico">▤</span><span class="nav-txt"><b>Laporan</b><small>Rekap & unduh</small></span></button>
+  </nav>
+</aside>
+<section class="workspace">
+  <header class="topbar"><div><button type="button" id="mobileMenuToggle" class="mobile-menu-toggle" style="display:none">☰</button><p id="pageCrumb" class="eyebrow">DASHBOARD</p><h2 id="pageTitle">Ringkasan Kehadiran</h2></div><div class="topbar-right"><div class="user-chip"><span id="userInitial">A</span><div><b id="userName">Admin</b><small id="userRoleLabel">Administrator</small></div></div><button type="button" id="logoutButton" class="logout">↪</button></div></header>
+  <div id="toast" class="toast"></div>
+  <main class="content">
+
+    <!-- DASHBOARD -->
+    <section id="dashboard" class="page active-page">
+      <div class="hero"><div><p class="eyebrow">RINGKASAN HARI INI</p><h3>Selamat datang, <span id="welcomeName">Admin</span>.</h3><p>Berikut ringkasan absensi mahasiswa yang tercatat hari ini.</p></div><div class="date-card"><small>HARI INI</small><strong id="todayDate"></strong></div></div>
+      <section id="kelasSayaCard" class="panel kelas-saya hidden"><div class="kelas-saya-head"><div><p class="eyebrow">KELAS SAYA</p><h3 id="kelasSayaNama">—</h3><p id="kelasSayaMeta">—</p></div><div class="kelas-saya-actions"><button type="button" class="button primary btn-sm" data-goto="absensi">Absen</button><button type="button" class="button outline btn-sm" data-goto="qr">QR</button><button type="button" class="button outline btn-sm" data-goto="laporan">Laporan</button></div></div><div class="kelas-saya-grid"><div><small>ANGGOTA</small><b id="kelasSayaAnggota">0</b></div><div><small>MATKUL</small><b id="kelasSayaMatkul">0</b></div><div><small>HADIR HARI INI</small><b id="kelasSayaHadir">0</b></div><div><small>BELUM CATAT</small><b id="kelasSayaBelum">0</b></div></div><div id="kelasSayaChips" class="chip-row"></div></section>
+      <div class="stat-grid">
+        <article class="stat-card blue"><span>♙</span><div><small>TOTAL MAHASISWA</small><b id="totalSiswa">0</b><em>Terdaftar di kelas</em></div></article>
+        <article class="stat-card green"><span>✓</span><div><small>HADIR HARI INI</small><b id="hadirHariIni">0</b><em>Data absensi hari ini</em></div></article>
+        <article class="stat-card amber"><span>◷</span><div><small>BELUM TERCATAT</small><b id="belumTercatat">0</b><em>Menunggu absensi</em></div></article>
+        <article class="stat-card purple"><span>▦</span><div><small>JUMLAH KELAS</small><b id="totalKelas">0</b><em>Kelas yang dikelola</em></div></article>
+      </div>
+      <section class="panel"><div class="panel-header"><div><h3>Absensi Terbaru</h3><p>Aktivitas kehadiran mahasiswa yang terakhir dicatat.</p></div><button type="button" class="button outline jump-absen">Input Absensi</button></div><div class="table-wrap"><table><thead><tr><th>MAHASISWA</th><th>TANGGAL</th><th>STATUS</th><th>METODE</th></tr></thead><tbody id="recentAbsensi"></tbody></table></div></section>
+    </section>
+
+    <!-- MANAJEMEN USER (admin only) -->
+    <section id="users" class="page">
+      <div class="page-actions"><div><h3>Manajemen User</h3><p>Kelola akun admin, ketua kelas, dan mahasiswa.</p></div><button type="button" id="showUserForm" class="button primary">+ Tambah User</button></div>
+      
+      <!-- DAFTAR SEMUA USER -->
+      <section class="panel user-panel">
+        <div class="panel-header user-head"><div><h3>Daftar Semua User</h3><p id="userCount"></p></div><div class="user-toolbar"><input id="userSearch" class="user-search" placeholder="Cari nama / NIM..."><select id="userRoleFilter" class="user-filter"><option value="">Semua role</option><option value="admin">Admin</option><option value="ketua_kelas">Ketua Kelas</option><option value="mahasiswa">Mahasiswa</option></select></div></div>
+        <div class="table-wrap"><table class="user-table"><thead><tr><th class="c-no">NO</th><th>NAMA</th><th>NIM</th><th>ROLE</th><th>KELAS</th><th>DIBUAT</th><th class="c-aksi">AKSI</th></tr></thead><tbody id="userList"></tbody></table></div>
+        <div class="user-pager"><span id="userPageInfo"></span><div><button type="button" id="userPrev" class="button outline btn-sm">‹ Prev</button> <button type="button" id="userNext" class="button outline btn-sm">Next ›</button></div></div>
+      </section>
+    </section>
+
+    <!-- KELAS (admin only) -->
+    <section id="kelas" class="page">
+      <div class="page-actions">
+        <div><h3>Manajemen Kelas</h3><p>Kelola ketua, anggota, dan mata kuliah tiap kelas.</p></div>
+        <button type="button" id="showKelasForm" class="button primary">+ Tambah Kelas</button>
+      </div>
+
+      <div class="kelas-layout">
+        <aside class="panel kelas-list">
+          <div class="panel-header"><h3>Daftar Kelas</h3></div>
+          <div id="kelasListSidebar" class="class-list"></div>
+        </aside>
+
+        <main id="manageMembersArea" class="panel kelas-detail hidden">
+          <div class="panel-header">
+            <div><h3 id="currentClassName">Nama Kelas</h3><p id="currentClassStats">0 Anggota</p></div>
+            <button id="btnEditKelas" class="button outline btn-sm">Edit Kelas</button>
+          </div>
+
+          <div class="kelas-body">
+            <section class="kelas-section">
+              <h4>Akun Ketua Kelas</h4>
+              <div id="classKetuaBox"></div>
+            </section>
+
+            <section class="kelas-section">
+              <h4>Mata Kuliah</h4>
+              <div id="classMatkulList" class="chip-row"></div>
+              <form id="addMatkulForm" class="inline-form matkul-form">
+                <input name="kode" placeholder="Kode" required class="w-kode">
+                <input name="nama" placeholder="Nama mata kuliah" required>
+                <button class="button primary btn-sm">+ Tambah</button>
+              </form>
+            </section>
+
+            <section class="kelas-section">
+              <h4>Laporan Kehadiran</h4>
+              <div class="report-tabs">
+                <button type="button" class="button outline btn-sm tab-btn active" data-tab="harian">Harian</button>
+                <button type="button" class="button outline btn-sm tab-btn" data-tab="bulanan">Bulanan</button>
+              </div>
+              <div id="tabHarian">
+                <form id="classHarianForm" class="inline-form report-form">
+                  <input type="date" name="tanggal" required>
+                  <select name="mata_kuliah_id"><option value="">Semua matkul</option></select>
+                  <button class="button primary btn-sm">Lihat</button>
+                </form>
+                <div id="classHarianResult" class="table-wrap"></div>
+              </div>
+              <div id="tabBulanan" class="hidden">
+                <form id="classBulananForm" class="inline-form report-form">
+                  <select name="bulan"></select>
+                  <input type="number" name="tahun" required>
+                  <select name="mata_kuliah_id"><option value="">Semua matkul</option></select>
+                  <button class="button primary btn-sm">Lihat</button>
+                </form>
+                <div id="classBulananResult" class="table-wrap"></div>
+              </div>
+            </section>
+
+            <section class="kelas-section">
+              <h4>Daftar Anggota</h4>
+              <div class="member-cols">
+                <div class="member-col">
+                  <div class="column-header"><b>Anggota Kelas</b></div>
+                  <div id="classMembersList" class="member-list-scroll"></div>
+                  <button id="btnRemoveSelected" class="button outline btn-sm full">↑ Keluarkan</button>
+                </div>
+                <div class="member-col">
+                  <div class="column-header"><b>Mahasiswa Tanpa Kelas</b></div>
+                  <div id="unassignedMembersList" class="member-list-scroll"></div>
+                  <button id="btnAddSelected" class="button primary btn-sm full">↓ Masukkan</button>
+                </div>
+              </div>
+            </section>
+          </div>
+        </main>
+
+        <div id="noClassSelected" class="panel kelas-empty">
+          Pilih kelas di sebelah kiri untuk mengelola ketua, anggota & mata kuliah.
+        </div>
+      </div>
+    </section>
+
+    <!-- INPUT ABSENSI -->
+    <section id="absensi" class="page">
+      <div class="page-actions"><div><h3>Input Presensi</h3><p>Catat kehadiran mahasiswa secara manual.</p></div></div>
+      <section class="panel form-panel"><form id="absensiForm" class="form-grid"><label>Tanggal<input type="date" name="tanggal" id="absenTanggal" required></label><label>Mahasiswa<select name="nim" id="absenSiswa" required></select></label><label>Mata kuliah<select name="mata_kuliah_id" id="absenMataKuliah" required></select></label><label>Status<select name="status"><option value="hadir">Hadir</option><option value="sakit">Sakit</option><option value="izin">Izin</option><option value="alfa">Alfa</option></select></label><label>Keterangan<input name="keterangan" placeholder="Opsional"></label><button type="submit" class="button primary">Simpan Presensi</button></form></section>
+      <section class="panel"><div class="panel-header"><h3>Riwayat Presensi</h3></div><div class="table-wrap"><table><thead><tr><th>NIM</th><th>TANGGAL</th><th>STATUS</th><th>KETERANGAN</th></tr></thead><tbody id="absensiList"></tbody></table></div></section>
+    </section>
+
+    <!-- LAPORAN -->
+    <section id="laporan" class="page">
+      <div class="page-actions"><div><h3>Laporan Kehadiran</h3><p>Unduh rekap presensi mahasiswa berdasarkan kelas dan periode.</p></div></div>
+      <section class="panel report-card"><div class="report-icon">▤</div><div><h3>Rekap Bulanan</h3><p>Pilih bulan dan tahun untuk melihat rekap kehadiran kelas Anda.</p></div><form id="reportForm" class="report-controls"><select id="reportKelas" style="display:none" required></select><select id="reportBulan" required></select><input id="reportTahun" type="number" required><button type="submit" class="button primary">Lihat Rekap</button></form></section>
+      <section id="reportResult" class="panel hidden"></section>
+    </section>
+
+    <!-- QR -->
+    <section id="qr" class="page">
+      <div class="page-actions"><div><h3>Presensi QR</h3><p>Buat kode QR untuk presensi mandiri mahasiswa di kelas.</p></div><span id="qrPageBadge" class="quick-tip hidden">Sesi aktif</span></div>
+      <section class="panel qr-panel"><div class="qr-form-side"><div class="report-icon">⌘</div><h3>Buat Sesi Presensi QR</h3><p>Kode berlaku selama 15 menit setelah dibuat. Tampilkan di proyektor agar mudah dipindai.</p><form id="qrForm" class="qr-form"><label>Kelas<select id="qrKelas" required></select></label><label>Mata kuliah<select id="qrMataKuliah" required></select></label><button type="submit" class="button primary">Buat Kode QR</button></form><ol class="qr-steps"><li><b>1. Buat</b><span>Pilih matkul lalu buat kode</span></li><li><b>2. Tampilkan</b><span>Perbesar di layar kelas</span></li><li><b>3. Pantau</b><span>Lihat yang sudah scan</span></li></ol></div><div id="qrResult" class="qr-result"><div class="qr-empty"><span class="qr-empty-ico">⌘</span><b>Belum ada sesi QR</b><p>Pilih mata kuliah lalu tekan “Buat Kode QR”. Gambar besar tampil di sini.</p></div></div></section>
+    </section>
+
+    <!-- HASIL & MANAJEMEN KETUA KELAS (arsip, kini gabung ke menu Kelas) -->
+    <section id="admin" class="page" style="display:none">
+      <div class="page-actions">
+        <div>
+          <h3>Hasil Ketua Kelas</h3>
+          <p>Pantau performa kehadiran mahasiswa.</p>
+        </div>
+        <button type="button" id="btnTambahKetuaModal" class="button primary">+ Tambah Ketua</button>
+      </div>
+
+      <!-- PANEL HASIL PERFORMA ABSENSI -->
+      <div class="page-actions" style="margin-top:20px;">
+        <div>
+          <h3>Rekap Performa Kehadiran per Kelas</h3>
+          <p>Tingkat kehadiran absensi yang dicatat oleh ketua kelas.</p>
+        </div>
+        <div class="report-controls" style="display:flex;gap:10px;align-items:end">
+          <label>Bulan<select id="adminBulan"></select></label>
+          <label>Tahun<select id="adminTahun"></select></label>
+          <button type="button" id="adminFilter" class="button primary">Tampilkan</button>
+        </div>
+      </div>
+      <section class="panel">
+        <div class="panel-header"><h3>Statistik Kehadiran Kelas</h3></div>
+        <div id="adminList" class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>KETUA KELAS</th>
+                <th>KELAS</th>
+                <th>NAMA KETUA</th>
+                <th>TOTAL SISWA</th>
+                <th>TOTAL ABSENSI</th>
+                <th>TOTAL HADIR</th>
+                <th>% HADIR</th>
+                <th>RINCIAN</th>
+              </tr>
+            </thead>
+            <tbody id="adminTable"></tbody>
+          </table>
+        </div>
+      </section>
+      <section id="adminDetail" class="panel hidden" style="margin-top:20px;"></section>
+
+      <!-- IMPORT AKUN DARI SPREADSHEET -->
+      <div class="page-actions" style="margin-top:20px;">
+        <div>
+          <h3>Import Akun dari Spreadsheet</h3>
+          <p>Upload CSV/XLSX (Nama,NIM,Angkatan,Role). Nama akun = persis kolom Nama, password = NIM.</p>
+        </div>
+      </div>
+      <section class="panel">
+        <div class="panel-header"><h3>Upload File</h3></div>
+        <form id="importForm" class="inline-form" style="padding:16px;display:flex;gap:10px;align-items:end;flex-wrap:wrap;">
+          <label>File CSV/XLSX<input type="file" id="importFile" accept=".csv,.xlsx,.xlsm" required></label>
+          <label style="display:flex;gap:6px;align-items:center;"><input type="checkbox" id="importDryRun" checked> Cek dulu (dry run)</label>
+          <button type="submit" class="button primary">Import Akun</button>
+        </form>
+        <div id="importResult" style="padding:0 16px 16px;"></div>
+      </section>
+    </section>
+
+  </main>
+</section>
+</div>
+
+<!-- MAHASISWA VIEW -->
+<div id="mahasiswaView" class="app-shell hidden">
+<aside class="sidebar">
+  <div class="sidebar-brand"><span class="brand-mark small">PK</span><span>Presensi<span>Kampus</span></span></div>
+  <p class="sidebar-section">MENU MAHASISWA</p>
+  <nav><button type="button" class="nav-item active">📋 Riwayat Absensi</button>
+  <a class="nav-item" href="/api/v1/qr/scan-page" target="_blank" style="display:block;text-decoration:none;">⌘ Scan QR Presensi</a></nav>
+</aside>
+<section class="workspace">
+  <header class="topbar"><div><p id="mPageCrumb" class="eyebrow">PRESENSI</p><h2 id="mPageTitle">Riwayat Absensi Saya</h2></div><div class="topbar-right"><div class="user-chip"><span id="mUserInitial">M</span><div><b id="mUserName">Mahasiswa</b><small>Mahasiswa</small></div></div><button type="button" id="mLogoutButton" class="logout">↪</button></div></header>
+  <div id="mToast" class="toast"></div>
+  <main class="content">
+    <section id="riwayat" class="page active-page">
+      <div class="scan-banner">
+        <div>
+          <p style="font-weight:800;font-size:15px;margin:0">⌘ Presensi via QR Code</p>
+          <p style="font-size:12px;color:#93c5fd;margin:3px 0 0">Scan QR yang ditampilkan di kelas untuk mencatat kehadiran</p>
+        </div>
+        <a href="/api/v1/qr/scan-page" target="_blank" class="btn-scan">Buka Scanner →</a>
+      </div>
+      <div class="stat-grid" style="margin-bottom:20px">
+        <article class="stat-card green"><span>✓</span><div><small>TOTAL HADIR</small><b id="mHadir">0</b><em>Pertemuan hadir</em></div></article>
+        <article class="stat-card amber"><span>◷</span><div><small>SAKIT / IZIN</small><b id="mSakitIzin">0</b><em>Keterangan absen</em></div></article>
+        <article class="stat-card blue"><span>✗</span><div><small>ALFA</small><b id="mAlfa">0</b><em>Tanpa keterangan</em></div></article>
+        <article class="stat-card purple"><span>%</span><div><small>% KEHADIRAN</small><b id="mPersen">0%</b><em>Rata-rata semua matkul</em></div></article>
+      </div>
+      <section class="panel">
+        <div class="panel-header"><div><h3>Riwayat Absensi Saya</h3><p>Semua catatan kehadiran Anda.</p></div></div>
+        <div class="table-wrap"><table><thead><tr><th>TANGGAL</th><th>MATA KULIAH</th><th>STATUS</th><th>KETERANGAN</th></tr></thead><tbody id="mAbsensiList"></tbody></table></div>
+      </section>
+    </section>
+  </main>
+</section>
+</div>
+
+<div id="modal" class="modal hidden"><div class="modal-card"><button type="button" id="closeModal" class="modal-close">×</button><div id="modalContent"></div></div></div>
+<script src="/static/js/common.js?v=9"></script>
+<script src="/static/js/admin.js?v=9"></script>
+<script src="/static/js/ketua.js?v=9"></script>
+<script src="/static/js/mahasiswa.js?v=9"></script>
+<script src="/static/js/kelas_manager.js?v=9"></script>
+</body></html>
