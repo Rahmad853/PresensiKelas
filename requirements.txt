@@ -15,3 +15,5 @@ Pillow>=11.3.0
 python-dotenv==1.0.1
 pytest==9.1.1
 httpx==0.28.1
+serverless-wsgi==3.0.0
+
