@@ -1,0 +1,8 @@
+{
+  "name": "presensi-kelas",
+  "version": "1.0.0",
+  "description": "Aplikasi Presensi Kelas",
+  "scripts": {
+    "start": "python run_server.py"
+  }
+}
